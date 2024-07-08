@@ -1,0 +1,8 @@
+﻿.vs
+Temp
+Library
+Logs
+obj
+*.csproj
+SrpLearn.sln
+UserSettings
