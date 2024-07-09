@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 
-public class CameraRenderer
+public partial class CameraRenderer
 {
     static ShaderTagId unlitShaderTagId = new ShaderTagId("SRPDefaultUnlit");
 
@@ -18,10 +18,14 @@ public class CameraRenderer
 
     CullingResults cullingResults;
 
+
     public void Render(ScriptableRenderContext context, Camera camera)
     {
         this.context = context;
         this.camera = camera;
+
+        PrepareBuffer();
+        PrepareForSceneWindow();
 
         if (!Cull())
         {
@@ -29,9 +33,10 @@ public class CameraRenderer
         }
         Setup();
         DrawVisibleGeometry();
+        DrawUnsupportedShaders();
+        DrawGizmos();
         Submit();
     }
-
     private bool Cull()
     {
         if (camera.TryGetCullingParameters(out var p))
@@ -45,8 +50,12 @@ public class CameraRenderer
     private void Setup()
     {
         context.SetupCameraProperties(camera);
-        buffer.ClearRenderTarget(true, true, Color.clear);
-        buffer.BeginSample(bufferName);
+        CameraClearFlags clearFlags = camera.clearFlags;
+        buffer.ClearRenderTarget(
+            clearFlags <= CameraClearFlags.Depth, 
+            clearFlags <= CameraClearFlags.Color, 
+            clearFlags == CameraClearFlags.Color ? camera.backgroundColor.linear : Color.clear);
+        buffer.BeginSample(SampleName);
         ExecuteBuffer();
     }
 
@@ -70,7 +79,7 @@ public class CameraRenderer
 
     private void Submit()
     {
-        buffer.EndSample(bufferName);
+        buffer.EndSample(SampleName);
         ExecuteBuffer();
         context.Submit();
     }
